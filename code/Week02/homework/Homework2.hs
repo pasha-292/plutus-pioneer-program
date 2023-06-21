@@ -10,7 +10,7 @@ module Homework2 where
 import qualified Plutus.V2.Ledger.Api as PlutusV2
 import           PlutusTx             (unstableMakeIsData, compile)
 import           PlutusTx.Prelude     (Bool, BuiltinData)
-import           Prelude              (undefined, Eq ((/=)))
+import           Prelude              (undefined, (/=))
 import Utilities (wrapValidator)
 --import           Utilities            (wrapValidator)
 
@@ -28,7 +28,6 @@ PlutusTx.unstableMakeIsData ''MyRedeemer
 -- Create a validator that unlocks the funds if MyRedemeer's flags are different
 mkValidator :: () -> MyRedeemer -> PlutusV2.ScriptContext -> Bool
 mkValidator _ redeemer _ = flag1 redeemer /= flag2 redeemer
-
 
 wrappedVal :: BuiltinData -> BuiltinData -> BuiltinData -> ()
 wrappedVal = wrapValidator mkValidator
