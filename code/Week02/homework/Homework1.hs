@@ -17,7 +17,6 @@ import           Utilities            (wrapValidator)
 -- This should validate if and only if the two Booleans in the redeemer are True!
 mkValidator :: () -> (Bool, Bool) -> PlutusV2.ScriptContext -> Bool
 mkValidator _ (x, y) _ = x && y
-mkValidator _ _ _ = False
 
 wrappedVal :: BuiltinData -> BuiltinData -> BuiltinData -> ()
 wrappedVal = wrapValidator mkValidator
