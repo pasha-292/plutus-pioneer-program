@@ -11,7 +11,7 @@ import qualified Plutus.V2.Ledger.Api as PlutusV2
 import           PlutusTx             (unstableMakeIsData, compile)
 import           PlutusTx.Prelude     (Bool, BuiltinData)
 import           Prelude              (undefined, (/=))
-import Utilities (wrapValidator)
+import           Utilities            (wrapValidator)
 --import           Utilities            (wrapValidator)
 
 ---------------------------------------------------------------------------------------------------
