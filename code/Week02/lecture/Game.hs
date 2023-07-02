@@ -18,7 +18,7 @@ data GameDatum = GameDatum
     , numbers         :: (Int, Int, Int)
     , winners         :: [Plutus.PubKeyHash]
     , accumulated     :: Plutus.Value
-    } deriving (Generic, Plutus.Eq, Plutus.ToData, Plutus.FromData)
+    } deriving (Plutus.Generic, Plutus.Eq, Plutus.ToData, Plutus.FromData)
 
 unstableMakeIsData ''GameDatum
 
