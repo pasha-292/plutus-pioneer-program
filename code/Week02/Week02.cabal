@@ -55,6 +55,7 @@ library
                       , FortyTwo
                       , FortyTwoTyped
                       , CustomTypes
+                      , Game
                       , Homework1
                       , Homework2
 
