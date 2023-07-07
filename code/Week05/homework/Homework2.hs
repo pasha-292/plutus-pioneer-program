@@ -26,7 +26,7 @@ import           Plutus.V2.Ledger.Api       (BuiltinData, CurrencySymbol,
 import qualified PlutusTx
 import           PlutusTx.Builtins.Internal (BuiltinByteString (BuiltinByteString))
 import           PlutusTx.Prelude           (Bool (False), Eq ((==)), any,
-                                             traceIfFalse, ($), (&&), (.))
+                                             traceIfFalse, ($), (&&), (.), not)
 import           Prelude                    (IO, Show (show), String)
 import           Text.Printf                (printf)
 import           Utilities                  (bytesToHex, currencySymbol,
