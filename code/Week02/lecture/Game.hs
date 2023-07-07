@@ -7,53 +7,43 @@
 
 module Game where
 
-import qualified Plutus.V1.Ledger.Api as Plutus
-import           PlutusTx             (unstableMakeIsData)
-import           PlutusTx.Prelude     hiding (Bool (..), ifThenElse)
-import           Utilities            (wrapValidator)
-import           Data.Int             (Int)
+import qualified Plutus.V2.Ledger.Api as PlutusV2
+import           PlutusTx             (BuiltinData, compile)
+import           PlutusTx.Prelude     (otherwise, traceError, (==), Bool)
+import           Prelude              (IO, Int, Bool)
+import           Utilities            (writeValidatorToFile)
 
-data GameDatum = GameDatum
-    { verifierAddress :: Plutus.Address
-    , numbers         :: (Int, Int, Int)
-    , winners         :: [Plutus.PubKeyHash]
-    , accumulated     :: Plutus.Value
-    } deriving (Plutus.Generic, Plutus.Eq, Plutus.ToData, Plutus.FromData)
+---------------------------------------------------------------------------------------------------
+-------------------------------- ON-CHAIN CODE / VALIDATOR ----------------------------------------
 
-unstableMakeIsData ''GameDatum
-
-{-# INLINABLE guessNumber #-}
-guessNumber :: (Int, Int, Int) -> Int -> Bool
-guessNumber (n1, n2, n3) guess = guess == n1 || guess == n2 || guess == n3
-
+-- This validator checks if the guess is correct and returns the winner address
+--                    Datum         Redeemer     ScriptContext
+validateGuess :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+validateGuess _ redeemer _ =
+  let
+    secretNumbers = [12, 34, 56]
+  in
+    if isMember redeemer secretNumbers then
+      ()
+    else
+      traceError "expected a different number"
 {-# INLINABLE validateGuess #-}
-validateGuess :: GameDatum -> Int -> Bool
-validateGuess gameDatum guess =
-    let
-        correctGuess = guessNumber (numbers gameDatum) guess
-        existingWinner = any (\winner -> winner == Plutus.ownPubKeyHash) (winners gameDatum)
-    in
-        not existingWinner && correctGuess
 
-{-# INLINABLE processGuess #-}
-processGuess :: GameDatum -> Int -> Plutus.Value -> GameDatum
-processGuess gameDatum guess bet =
-    let
-        correctGuess = guessNumber (numbers gameDatum) guess
-        updatedAccumulated = accumulated gameDatum `Plutus.plus` bet
-        updatedWinners = if correctGuess then Plutus.ownPubKeyHash : winners gameDatum else winners gameDatum
-    in
-        gameDatum { winners = updatedWinners, accumulated = updatedAccumulated }
+validator :: PlutusV2.Validator
+validator = PlutusV2.mkValidatorScript $$(PlutusTx.compile [|| validateGuess ||])
 
-{-# INLINABLE mkValidator #-}
-mkValidator :: GameDatum -> Int -> Plutus.ScriptContext -> Bool
-mkValidator gameDatum guess _ =
-    if validateGuess gameDatum guess
-        then True
-        else Plutus.traceIfFalse "Invalid guess" False
+---------------------------------------------------------------------------------------------------
+------------------------------------- HELPER FUNCTIONS --------------------------------------------
 
-wrappedValidator :: Plutus.BuiltinData -> Plutus.BuiltinData -> Plutus.BuiltinData -> ()
-wrappedValidator = wrapValidator . mkValidator
+isMember :: Int -> [Int] -> Bool
+isMember n [] = False
+isMember n (x:xs)
+    | n == x = True
+    | otherwise = isMember n xs
 
-gameValidator :: Plutus.Validator
-gameValidator = Plutus.mkValidatorScript $$(PlutusTx.compile [|| wrappedValidator ||])
+saveVal :: IO ()
+saveVal = writeValidatorToFile "./assets/game.plutus" validator
+
+main :: IO ()
+main = do
+  saveVal
