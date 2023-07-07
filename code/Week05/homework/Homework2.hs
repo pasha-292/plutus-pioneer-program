@@ -1,7 +1,14 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE DeriveAnyClass      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeFamilies        #-}
+{-# LANGUAGE TypeOperators       #-}
 
 module Homework2 where
 
@@ -37,12 +44,15 @@ mkEmptyNFTPolicy _oref () _ctx = traceIfFalse "UTxO not consumed"   hasUTxO     
     info :: TxInfo
     info = scriptContextTxInfo _ctx
 
+    tn :: TokenName
+    tn = ""
+
     hasUTxO :: Bool
     hasUTxO = any (\i -> txInInfoOutRef i == _oref) $ txInfoInputs info
 
     checkMintedAmount :: Bool
     checkMintedAmount = case flattenValue (txInfoMint info) of
-        [(_, tn, amt)] -> amt == 1
+        [(_, tn'', amt)] -> amt == 1
         _                -> False
 
 {-# INLINABLE mkWrappedEmptyNFTPolicy #-}
