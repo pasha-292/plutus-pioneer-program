@@ -6,42 +6,43 @@
 
 module Game where
 
-import qualified Plutus.V2.Ledger.Api as PlutusV2
-import           PlutusTx             (BuiltinData, compile)
-import           PlutusTx.Builtins    as Builtins (mkI)
-import           PlutusTx.Prelude     hiding (&&, (<=), (>=))
-import           Prelude              (IO)
-import           PlutusTx.Bool        as PlutusBool
-import           PlutusTx.Maybe       as PlutusMaybe
-import           PlutusTx.Eq          as PlutusEq
-import           PlutusTx.List        as PlutusList
-import           Utilities            (writeValidatorToFile)
+import           Plutus.V2.Ledger.Api      (ScriptContext (scriptContextTxInfo), PubKeyHash, Validator, mkValidatorScript, adaToken, adaSymbol, singleton)
+import           Plutus.V2.Ledger.Contexts (valuePaidTo, TxInfo)
+import           PlutusTx                  (compile, unstableMakeIsData)
+import           PlutusTx.Builtins         (BuiltinData, Integer)
+import           PlutusTx.Prelude          (Bool (..), (==), traceIfFalse, (||))
+import           Utilities                 (wrapValidator)
+
 
 ---------------------------------------------------------------------------------------------------
 ----------------------------------- ON-CHAIN / VALIDATOR ------------------------------------------
 
--- This validator succeeds only if the redeemer contains three numbers between 0 and 100
---                  Datum         Redeemer     ScriptContext
-gameValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
-gameValidator _ r _
-    | isMatch r = ()
-    | otherwise = traceError "expected three numbers between 0 and 100"
-  where
-    isMatch :: BuiltinData -> Bool
-    isMatch redeemer =
-        case redeemer of
-            [x, y, z] -> isValidNumber x && isValidNumber y && isValidNumber z
-            _         -> False
+data GameDatum = GameDatum
+  { number1 :: Integer
+  , number2 :: Integer
+  , number3 :: Integer
+  }
+PlutusTx.unstableMakeIsData ''GameDatum
 
-    isValidNumber :: BuiltinData -> Bool
-    isValidNumber n = n PlutusEq.>= Builtins.mkI 0 && n PlutusEq.<= Builtins.mkI 100
-{-# INLINABLE gameValidator #-}
+{-# INLINABLE mkValidator #-}
+mkValidator :: GameDatum -> Integer -> ScriptContext -> Bool
+mkValidator ds r ctx = traceIfFalse "Your number does not match" numbersMatch
+    where
+        txInfo :: TxInfo
+        txInfo = scriptContextTxInfo ctx
 
-validator :: PlutusV2.Validator
-validator = PlutusV2.mkValidatorScript $$(PlutusTx.compile [|| gameValidator ||])
+        n1 = number1 ds
+        n2 = number2 ds
+        n3 = number3 ds
 
----------------------------------------------------------------------------------------------------
-------------------------------------- HELPER FUNCTIONS --------------------------------------------
+        numbersMatch :: Bool
+        numbersMatch = (r == n1) || (r == n2) || (r == n3)
 
-saveVal :: IO ()
-saveVal = writeValidatorToFile "./assets/game.plutus" validator
+
+{-# INLINABLE  mkWrappedValidator #-}
+mkWrappedValidator :: BuiltinData -> BuiltinData -> BuiltinData -> ()
+mkWrappedValidator = wrapValidator mkValidator
+
+
+validator :: Validator
+validator = mkValidatorScript $$(compile [|| mkWrappedValidator ||])
